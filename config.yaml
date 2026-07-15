@@ -1,0 +1,103 @@
+# ============================================================
+# Flight-deal finder — all tunables live here.
+# Secrets (API keys, bot token) go in .env — see .env.example.
+# ============================================================
+
+# Departure airports (IATA codes). OPO is Porto; add more later, e.g. LIS.
+origins:
+  - OPO
+
+# Currency for API queries and price display.
+currency: EUR
+
+# Optional watchlist of specific destinations (IATA airport/city codes).
+# Watchlist routes get a full Flight Offers Search each run (rotating through
+# the list), including a business-cabin quote so the premium-cabin error-fare
+# heuristic can fire. Broad "anywhere from OPO" discovery happens regardless.
+watchlist:
+  - JFK   # New York
+  - GRU   # São Paulo
+  - BKK   # Bangkok
+
+detection:
+  # Flag a fare when it is at least this % below the trailing average.
+  discount_threshold_pct: 40
+  # Trailing window used to compute the "normal" price per route.
+  baseline_window_days: 90
+  # Baseline needs at least this many observations before price-based
+  # flagging activates (prevents false positives in the first days).
+  min_observations: 5
+  # Error-fare heuristics:
+  zscore_threshold: 3.0        # ≥ this many std-devs below route mean
+  decimal_error_ratio: 0.15    # price ≤ 15% of baseline → decimal/currency error suspect
+  premium_cabin_ratio: 1.4     # business/first ≤ 1.4× economy baseline → error-fare suspect
+  # Ignore fares below this (filters test-environment noise / junk data).
+  min_price_floor: 10
+
+alerts:
+  # Don't re-alert the same route+kind within this window...
+  cooldown_hours: 24
+  # ...unless the price dropped at least this much further since the alert.
+  realert_drop_pct: 5
+  # Safety cap per run (a first run against busy RSS feeds can match a lot).
+  max_alerts_per_run: 15
+
+schedule:
+  # Used by `python -m flightdeals.run --loop` when running on your own machine.
+  # NOTE: the GitHub Actions schedule is separate — edit the cron line in
+  # .github/workflows/check-deals.yml (default: every 3 hours).
+  check_every_hours: 3
+
+api:
+  amadeus:
+    enabled: true
+    # "test" = free sandbox (limited, cached data — fine for trying things out)
+    # "production" = real fares; self-service production keys still include a
+    # free monthly quota. See README for the quota math.
+    environment: test
+    # Broad discovery: one Flight Inspiration Search call per origin per run.
+    max_inspiration_calls_per_run: 2
+    # Watchlist: routes searched per run (least-recently-checked first).
+    # Each route costs 1 call (2 if premium_cabin_check is on).
+    max_offer_calls_per_run: 3
+    premium_cabin_check: true
+    # Inspiration search window: departures from +7 days to +this many days.
+    departure_window_days: 60
+    # Inspiration round-trip length range (min,max days).
+    trip_length_days: [3, 14]
+    # Watchlist offer searches use these concrete dates:
+    offers_days_ahead: 45
+    offers_stay_days: 7
+    # Identical API requests within this window are served from the local
+    # cache instead of hitting Amadeus again.
+    cache_ttl_minutes: 120
+  kiwi:
+    # Kiwi Tequila closed to new sign-ups in 2023. If you have a legacy key,
+    # set KIWI_API_KEY in .env and flip this to true.
+    enabled: false
+    max_calls_per_run: 2
+
+rss:
+  # Case-insensitive whole-word match against post title, summary, and tags.
+  keywords:
+    - porto
+    - opo
+    - portugal
+  # Ignore posts older than this on first sight (prevents a first-run flood
+  # of stale archive posts).
+  max_age_days: 7
+  request_timeout_seconds: 20
+  feeds:
+    - name: Secret Flying
+      url: https://www.secretflying.com/feed/
+    - name: Fly4Free
+      url: https://www.fly4free.com/feed/
+    - name: The Flight Deal
+      url: https://www.theflightdeal.com/feed/
+    - name: Travel Pirates
+      url: https://www.travelpirates.com/rss
+    - name: DealMoon
+      url: https://www.dealmoon.com/rss/travel
+
+database:
+  path: data/flightdeals.db

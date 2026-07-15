@@ -1,0 +1,10 @@
+[project]
+name = "flightdeals"
+version = "0.1.0"
+description = "Flight-deal finder for departures from Porto (OPO): price anomalies, error fares, and blog finds."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"

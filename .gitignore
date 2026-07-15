@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Secrets — never commit these
+.env
+
+# SQLite side files (the .db itself IS committed — CI persists it)
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+data/demo.db
+
+# OS noise
+.DS_Store
