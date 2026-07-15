@@ -1,0 +1,69 @@
+# Scheduled flight-deal check.
+#
+# NOTE: scheduled workflows only run from the repository's DEFAULT branch,
+# and GitHub Actions cannot read config.yaml for its schedule — edit the
+# cron line below to change frequency (see README → Deployment).
+#
+# The SQLite database is committed back to the repo after each run so price
+# history persists between runs ([skip ci] keeps that commit from
+# triggering other workflows).
+
+name: Check flight deals
+
+on:
+  schedule:
+    - cron: "17 */3 * * *" # every 3 hours, at :17 to dodge top-of-hour load
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: check-deals
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run deal check
+        env:
+          AMADEUS_CLIENT_ID: ${{ secrets.AMADEUS_CLIENT_ID }}
+          AMADEUS_CLIENT_SECRET: ${{ secrets.AMADEUS_CLIENT_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          KIWI_API_KEY: ${{ secrets.KIWI_API_KEY }}
+        run: python -m flightdeals.run --trigger cron
+
+      - name: Commit updated database
+        run: |
+          git config user.name "flight-deals-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/flightdeals.db
+          if git diff --cached --quiet; then
+            echo "No database changes to commit."
+            exit 0
+          fi
+          git commit -m "data: update price history [skip ci]"
+          # Push with retry: if something landed on the branch meanwhile,
+          # rebase and keep OUR database version (it has the newest data).
+          for attempt in 1 2 3; do
+            git push && exit 0
+            git fetch origin "$GITHUB_REF_NAME"
+            if ! git rebase "origin/$GITHUB_REF_NAME"; then
+              git checkout --theirs data/flightdeals.db
+              git add data/flightdeals.db
+              git rebase --continue
+            fi
+          done
+          git push
