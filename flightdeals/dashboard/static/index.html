@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flight Deals</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --wash:           rgba(11,11,11,0.04);
+    --series-1:       #2a78d6;
+    --kind-error:     #d03b3b;   /* status: critical */
+    --kind-drop:      #0ca30c;   /* status: good */
+    --kind-blog:      #2a78d6;   /* categorical slot 1 */
+    --btn-ink:        #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --wash:           rgba(255,255,255,0.06);
+      --series-1:       #3987e5;
+      --kind-blog:      #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:           #0d0d0d;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:           #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --wash:           rgba(255,255,255,0.06);
+    --series-1:       #3987e5;
+    --kind-blog:      #3987e5;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  a { color: var(--series-1); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 20px 60px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 6px; }
+  h1 { font-size: 20px; margin: 0; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px;
+    font-size: 12px; color: var(--text-secondary); background: var(--surface-1);
+  }
+  .chip.off { opacity: .6; }
+  .chip .st { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+              margin-right: 5px; vertical-align: 0; background: var(--kind-drop); }
+  .chip.off .st { background: transparent; border: 1.5px solid var(--text-muted); }
+  .spacer { flex: 1; }
+  .lastrun { color: var(--text-muted); font-size: 12px; }
+  button.primary {
+    background: var(--series-1); color: var(--btn-ink); border: 0; border-radius: 8px;
+    padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.primary[disabled] { opacity: .6; cursor: wait; }
+  button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, th button:focus-visible {
+    outline: 2px solid var(--series-1); outline-offset: 2px;
+  }
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--btn-ink);
+          border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite;
+          vertical-align: -2px; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 16px 0 26px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .tile .label { color: var(--text-muted); font-size: 12px; }
+  .tile .value { font-size: 26px; font-weight: 650; margin-top: 2px; }
+  .tile .sub { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
+
+  h2 { font-size: 15px; margin: 26px 0 10px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .filters select, .filters input {
+    background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 8px; font: inherit;
+  }
+  .filters input { min-width: 200px; }
+  .count { color: var(--text-muted); font-size: 12px; margin-left: auto; }
+
+  .tablebox { overflow-x: auto; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; min-width: 760px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th { position: sticky; top: 0; background: var(--surface-1); z-index: 1; }
+  th button {
+    all: unset; cursor: pointer; font-weight: 600; color: var(--text-secondary); font-size: 12px;
+    display: inline-flex; gap: 4px; align-items: center;
+  }
+  th button .arrow { font-size: 10px; color: var(--text-muted); }
+  tbody tr:hover { background: var(--wash); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td .muted { color: var(--text-muted); font-size: 12px; }
+  td.reason { max-width: 380px; }
+  td.reason .text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-secondary); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border);
+    border-radius: 999px; padding: 1px 9px 1px 7px; font-size: 12px; color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .price { font-weight: 650; font-variant-numeric: tabular-nums; }
+  .off { color: var(--kind-drop); font-weight: 600; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .card .route { font-weight: 650; }
+  .card .big { font-size: 22px; font-weight: 650; margin: 2px 0; }
+  .card .meta { color: var(--text-muted); font-size: 12px; margin-bottom: 6px; }
+  .card svg { display: block; width: 100%; height: 56px; }
+
+  .empty { color: var(--text-muted); padding: 26px; text-align: center; }
+  .banner { background: var(--surface-1); border: 1px solid var(--kind-error); color: var(--text-primary);
+            border-radius: 10px; padding: 10px 14px; margin: 12px 0; display: none; }
+
+  #tooltip {
+    position: fixed; pointer-events: none; display: none; z-index: 10;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 9px; font-size: 12px; color: var(--text-primary);
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  #toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 16px; box-shadow: 0 4px 16px rgba(0,0,0,.2); display: none; max-width: 90vw;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>✈️ Flight Deals</h1>
+    <div class="chips" id="originChips" title="Configured departure airports"></div>
+    <div class="chips" id="sourceChips"></div>
+    <div class="spacer"></div>
+    <span class="lastrun" id="lastRun"></span>
+    <button class="primary" id="checkBtn">Run check now</button>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <h2>Recent deals</h2>
+  <div class="filters">
+    <select id="kindFilter" aria-label="Filter by kind">
+      <option value="">All kinds</option>
+      <option value="error_fare">🚨 Error fares</option>
+      <option value="price_drop">💸 Price drops</option>
+      <option value="blog">📰 Blog finds</option>
+    </select>
+    <select id="daysFilter" aria-label="Time range">
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="60" selected>Last 60 days</option>
+      <option value="90">Last 90 days</option>
+    </select>
+    <input id="searchFilter" type="search" placeholder="Search route, reason, source…" aria-label="Search deals">
+    <span class="count" id="dealCount"></span>
+  </div>
+  <div class="tablebox">
+    <table id="dealsTable" aria-describedby="dealCount">
+      <thead><tr id="dealsHead"></tr></thead>
+      <tbody id="dealsBody"></tbody>
+    </table>
+  </div>
+
+  <h2>Tracked routes <span style="color:var(--text-muted);font-weight:400;font-size:12px">(daily minimum fare, last 30 days)</span></h2>
+  <div class="cards" id="routeCards"></div>
+</div>
+
+<div id="tooltip" role="status"></div>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const KINDS = {
+  error_fare: { label: "Error fare", emoji: "🚨", color: "var(--kind-error)" },
+  price_drop: { label: "Price drop", emoji: "💸", color: "var(--kind-drop)" },
+  blog:       { label: "Blog find",  emoji: "📰", color: "var(--kind-blog)" },
+};
+const state = {
+  deals: [], routes: [], summary: null,
+  sort: { key: "found_at", dir: -1 },
+  kind: "", search: "", days: 60,
+};
+
+const fmtMoney = (price, currency) => {
+  if (price == null) return "";
+  const amount = Math.round(price).toLocaleString("en-US");
+  return (currency || "EUR") === "EUR" ? `€${amount}` : `${amount} ${currency}`;
+};
+const fmtWhen = (iso) => {
+  if (!iso) return "";
+  const date = new Date(iso);
+  return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+};
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function fetchJSON(url, options) {
+  const response = await fetch(url, options);
+  if (!response.ok && response.status !== 409) throw new Error(`${url}: HTTP ${response.status}`);
+  return response.json();
+}
+
+// ---- header / tiles -------------------------------------------------------
+
+function renderSummary() {
+  const s = state.summary;
+  if (!s) return;
+  $("originChips").innerHTML = s.origins.map((o) => `<span class="chip">from <b>${esc(o)}</b></span>`).join("");
+  const src = s.sources;
+  const chip = (on, name, title) =>
+    `<span class="chip ${on ? "" : "off"}" title="${esc(title)}"><span class="st"></span>${name} ${on ? "on" : "off"}</span>`;
+  $("sourceChips").innerHTML =
+    chip(src.amadeus, "Amadeus", src.amadeus ? "Amadeus API active" : "Set AMADEUS_CLIENT_ID / SECRET in .env") +
+    chip(src.rss_feeds > 0, `RSS×${src.rss_feeds}`, "Deal-blog feeds") +
+    chip(src.telegram, "Telegram", src.telegram ? "Alerts on" : "Set TELEGRAM_BOT_TOKEN / CHAT_ID in .env");
+  const last = s.last_run;
+  $("lastRun").textContent = last && last.finished_at
+    ? `Last check ${fmtWhen(last.finished_at)} · ${last.observations} fares, ${last.new_deals} deals`
+    : "No checks recorded yet";
+  const c = s.counts;
+  const tile = (label, value, sub = "") =>
+    `<div class="tile"><div class="label">${label}</div><div class="value">${value.toLocaleString("en-US")}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
+  $("tiles").innerHTML =
+    tile("Routes tracked", c.routes) +
+    tile("Fare observations", c.observations) +
+    tile("Deals found", c.deals, `flagging ≥${s.threshold_pct}% below baseline`) +
+    tile("Blog posts matched", c.blog_posts);
+}
+
+// ---- deals table ------------------------------------------------------------
+
+const COLUMNS = [
+  { key: "found_at", label: "Found" },
+  { key: "kind", label: "Kind" },
+  { key: "route", label: "Route" },
+  { key: "price", label: "Price", num: true },
+  { key: "discount_pct", label: "% Off", num: true },
+  { key: "reason", label: "Why flagged" },
+  { key: "source", label: "Source" },
+];
+
+function renderDealsHead() {
+  $("dealsHead").innerHTML = COLUMNS.map((col) => {
+    const active = state.sort.key === col.key;
+    const arrow = active ? (state.sort.dir === 1 ? "▲" : "▼") : "";
+    const aria = active ? (state.sort.dir === 1 ? "ascending" : "descending") : "none";
+    return `<th class="${col.num ? "num" : ""}" aria-sort="${aria}">
+      <button data-sort="${col.key}">${col.label} <span class="arrow">${arrow}</span></button></th>`;
+  }).join("");
+  $("dealsHead").querySelectorAll("button[data-sort]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.sort;
+      if (state.sort.key === key) state.sort.dir *= -1;
+      else state.sort = { key, dir: key === "found_at" ? -1 : 1 };
+      renderDeals();
+    }));
+}
+
+function dealRoute(deal) {
+  return deal.origin && deal.destination ? `${deal.origin} → ${deal.destination}` : "";
+}
+
+function visibleDeals() {
+  const needle = state.search.trim().toLowerCase();
+  let rows = state.deals.filter((deal) =>
+    (!state.kind || deal.kind === state.kind) &&
+    (!needle || [dealRoute(deal), deal.reason, deal.source, deal.kind].join(" ").toLowerCase().includes(needle)));
+  const { key, dir } = state.sort;
+  rows = rows.slice().sort((a, b) => {
+    const va = key === "route" ? dealRoute(a) : a[key];
+    const vb = key === "route" ? dealRoute(b) : b[key];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return (typeof va === "number" ? va - vb : String(va).localeCompare(String(vb))) * dir;
+  });
+  return rows;
+}
+
+function renderDeals() {
+  renderDealsHead();
+  const rows = visibleDeals();
+  $("dealCount").textContent = `${rows.length} of ${state.deals.length} deals`;
+  if (!rows.length) {
+    $("dealsBody").innerHTML = `<tr><td colspan="${COLUMNS.length}"><div class="empty">
+      ${state.deals.length ? "Nothing matches the current filters." :
+        "No deals yet — data builds up as scheduled checks run. Try “Run check now”."}</div></td></tr>`;
+    return;
+  }
+  $("dealsBody").innerHTML = rows.map((deal) => {
+    const kind = KINDS[deal.kind] || { label: deal.kind, emoji: "✈️", color: "var(--text-muted)" };
+    const dates = deal.departure_date
+      ? `<div class="muted">${esc(deal.departure_date)}${deal.return_date ? " → " + esc(deal.return_date) : ""}</div>` : "";
+    const cabin = deal.cabin && deal.cabin !== "ECONOMY"
+      ? `<div class="muted">${esc(deal.cabin.toLowerCase())}</div>` : "";
+    const link = deal.url ? ` <a href="${esc(deal.url)}" target="_blank" rel="noopener">↗</a>` : "";
+    return `<tr>
+      <td title="${esc(deal.found_at)}">${fmtWhen(deal.found_at)}</td>
+      <td><span class="badge"><span class="dot" style="background:${kind.color}"></span>${kind.emoji} ${kind.label}</span></td>
+      <td><b>${esc(dealRoute(deal))}</b>${dates}${cabin}</td>
+      <td class="num"><span class="price">${fmtMoney(deal.price, deal.currency)}</span>
+        ${deal.baseline_price ? `<div class="muted">typ. ${fmtMoney(deal.baseline_price, deal.currency)}</div>` : ""}</td>
+      <td class="num">${deal.discount_pct != null ? `<span class="off">−${Math.round(deal.discount_pct)}%</span>` : ""}</td>
+      <td class="reason"><div class="text" title="${esc(deal.reason)}">${esc(deal.reason)}</div></td>
+      <td>${esc(deal.source)}${link}</td>
+    </tr>`;
+  }).join("");
+}
+
+// ---- route cards + sparklines ------------------------------------------------
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function sparkline(series, currency) {
+  const width = 240, height = 56, pad = 8;
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+  if (!series.length) return svg;
+
+  const prices = series.map((p) => p.price);
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const span = max - min || 1;
+  const x = (i) => series.length === 1 ? width / 2 : pad + (i * (width - 2 * pad)) / (series.length - 1);
+  const y = (price) => height - pad - ((price - min) / span) * (height - 2 * pad);
+
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", series.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.price).toFixed(1)}`).join(" "));
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "var(--series-1)");
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+  path.setAttribute("vector-effect", "non-scaling-stroke");
+  svg.appendChild(path);
+
+  // last point: dot with a 2px surface ring so it separates from the line
+  const last = series.length - 1;
+  const end = document.createElementNS(SVG_NS, "circle");
+  end.setAttribute("cx", x(last)); end.setAttribute("cy", y(series[last].price));
+  end.setAttribute("r", "3.5");
+  end.setAttribute("fill", "var(--series-1)");
+  end.setAttribute("stroke", "var(--surface-1)");
+  end.setAttribute("stroke-width", "2");
+  svg.appendChild(end);
+
+  const hover = document.createElementNS(SVG_NS, "circle");
+  hover.setAttribute("r", "4"); hover.setAttribute("fill", "var(--series-1)");
+  hover.setAttribute("stroke", "var(--surface-1)"); hover.setAttribute("stroke-width", "2");
+  hover.style.display = "none";
+  svg.appendChild(hover);
+
+  const tooltip = $("tooltip");
+  svg.addEventListener("mousemove", (event) => {
+    const rect = svg.getBoundingClientRect();
+    const rel = (event.clientX - rect.left) / rect.width * width;
+    let index = 0, best = Infinity;
+    series.forEach((_, i) => { const d = Math.abs(x(i) - rel); if (d < best) { best = d; index = i; } });
+    hover.setAttribute("cx", x(index)); hover.setAttribute("cy", y(series[index].price));
+    hover.style.display = "";
+    tooltip.style.display = "block";
+    tooltip.textContent = `${series[index].day} · ${fmtMoney(series[index].price, currency)}`;
+    tooltip.style.left = `${Math.min(event.clientX + 12, window.innerWidth - 140)}px`;
+    tooltip.style.top = `${event.clientY + 12}px`;
+  });
+  svg.addEventListener("mouseleave", () => { hover.style.display = "none"; tooltip.style.display = "none"; });
+  return svg;
+}
+
+function renderRoutes() {
+  const box = $("routeCards");
+  box.innerHTML = "";
+  if (!state.routes.length) {
+    box.innerHTML = `<div class="empty" style="grid-column:1/-1">No fare observations in the last 30 days.
+      Price history appears here once API checks start running.</div>`;
+    return;
+  }
+  for (const route of state.routes) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="route">${esc(route.origin)} → ${esc(route.destination)}</div>
+      <div class="big">${fmtMoney(route.last_price, route.currency)}</div>
+      <div class="meta">avg ${fmtMoney(route.avg_price, route.currency)} · low ${fmtMoney(route.min_price, route.currency)} · ${route.n_obs} obs</div>`;
+    card.appendChild(sparkline(route.series, route.currency));
+    box.appendChild(card);
+  }
+}
+
+// ---- actions -----------------------------------------------------------------
+
+function toast(message, ms = 6000) {
+  const el = $("toast");
+  el.textContent = message;
+  el.style.display = "block";
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.style.display = "none"; }, ms);
+}
+
+async function refresh() {
+  try {
+    const [summary, routes, deals] = await Promise.all([
+      fetchJSON("/api/summary"),
+      fetchJSON("/api/routes?days=30"),
+      fetchJSON(`/api/deals?days=${state.days}`),
+    ]);
+    state.summary = summary; state.routes = routes; state.deals = deals;
+    $("banner").style.display = "none";
+    renderSummary(); renderDeals(); renderRoutes();
+  } catch (error) {
+    const banner = $("banner");
+    banner.textContent = `Could not reach the dashboard API (${error.message}). Is the server running?`;
+    banner.style.display = "block";
+  }
+}
+
+$("checkBtn").addEventListener("click", async () => {
+  const btn = $("checkBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spin"></span>Checking…`;
+  try {
+    const result = await fetchJSON("/api/check", { method: "POST" });
+    if (result.error) toast(`⏳ ${result.error}`);
+    else toast(`Check done: ${result.observations} fares, ${result.new_posts} new posts, ` +
+               `${result.new_deals} deals, ${result.alerts_sent} alerts` +
+               (result.errors.length ? ` — ${result.errors.length} source errors (see server log)` : ""));
+    await refresh();
+  } catch (error) {
+    toast(`Check failed: ${error.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Run check now";
+  }
+});
+
+$("kindFilter").addEventListener("change", (e) => { state.kind = e.target.value; renderDeals(); });
+$("searchFilter").addEventListener("input", (e) => { state.search = e.target.value; renderDeals(); });
+$("daysFilter").addEventListener("change", async (e) => {
+  state.days = Number(e.target.value);
+  state.deals = await fetchJSON(`/api/deals?days=${state.days}`);
+  renderDeals();
+});
+
+refresh();
+</script>
+</body>
+</html>
