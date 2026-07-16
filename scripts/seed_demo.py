@@ -43,7 +43,7 @@ def main() -> None:
             observations.append(
                 FareObservation(
                     origin="OPO", destination=destination, price=price, currency="EUR",
-                    source="amadeus_inspiration",
+                    source="google_flights",
                     observed_at=(now - timedelta(days=day, hours=3)).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 )
             )
@@ -52,7 +52,7 @@ def main() -> None:
         observations.append(
             FareObservation(
                 origin="OPO", destination="JFK", price=289, currency="EUR",
-                source="amadeus_offers", departure_date="2026-09-10", return_date="2026-09-17",
+                source="google_flights", departure_date="2026-09-10", return_date="2026-09-17",
                 observed_at=(now - timedelta(days=day, hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             )
         )
@@ -62,20 +62,20 @@ def main() -> None:
         Deal(kind="price_drop", origin="OPO", destination="JFK", cabin="ECONOMY",
              price=289, currency="EUR", baseline_price=524, discount_pct=44.8,
              departure_date="2026-09-10", return_date="2026-09-17",
-             source="amadeus_offers", reason="45% below the 90-day average €524 (58 observations)",
-             url="https://www.google.com/travel/flights?q=Flights+from+OPO+to+JFK",
+             source="google_flights", reason="45% below the 90-day average €524 (58 observations)",
+             url="https://www.google.com/travel/flights/search?tfs=GhoSCjIwMjYtMDktMTBqBRIDT1BPcgUSA0pGSxoaEgoyMDI2LTA5LTE3agUSA0pGS3IFEgNPUE9CAQFIAZgBAQ%3D%3D&hl=en-US&curr=EUR",
              dedupe_key="price_drop:OPO:JFK:ECONOMY",
              found_at=(now - timedelta(hours=5)).strftime("%Y-%m-%dT%H:%M:%SZ")),
         Deal(kind="error_fare", origin="OPO", destination="BKK", cabin="BUSINESS",
              price=712, currency="EUR", baseline_price=645, discount_pct=None,
              departure_date="2026-10-02", return_date="2026-10-12",
-             source="amadeus_offers",
+             source="google_flights",
              reason="Business fare €712 is only 1.10× the economy reference €645 — premium-cabin mispricing",
              dedupe_key="error_fare:OPO:BKK:BUSINESS",
              found_at=(now - timedelta(days=1, hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")),
         Deal(kind="error_fare", origin="OPO", destination="DXB", cabin="ECONOMY",
              price=58, currency="EUR", baseline_price=432, discount_pct=86.6,
-             source="amadeus_inspiration",
+             source="google_flights",
              reason="Price €58 is ≤15% of the 90-day average €432 — possible decimal/currency error; "
                     "87% below the 90-day average €432 (31 observations)",
              dedupe_key="error_fare:OPO:DXB:ECONOMY",

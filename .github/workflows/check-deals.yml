@@ -7,6 +7,15 @@
 # The SQLite database is committed back to the repo after each run so price
 # history persists between runs ([skip ci] keeps that commit from
 # triggering other workflows).
+#
+# The default price source (Google Flights, no account needed) is an
+# unofficial scraper — Google can block requests from shared/datacenter IPs
+# like GitHub-hosted runners even when the same code works fine from your
+# own machine. Check this workflow's run logs after the first few fires; if
+# every google_flights call is erroring, RSS "blog find" deals still work
+# fine here regardless. AMADEUS_CLIENT_ID/SECRET and KIWI_API_KEY below are
+# only used if you've opted into those in config.yaml — harmless to leave
+# unset otherwise.
 
 name: Check flight deals
 

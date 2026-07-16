@@ -242,9 +242,11 @@ function renderSummary() {
   const chip = (on, name, title) =>
     `<span class="chip ${on ? "" : "off"}" title="${esc(title)}"><span class="st"></span>${name} ${on ? "on" : "off"}</span>`;
   $("sourceChips").innerHTML =
-    chip(src.amadeus, "Amadeus", src.amadeus ? "Amadeus API active" : "Set AMADEUS_CLIENT_ID / SECRET in .env") +
+    chip(src.google_flights, "Google Flights", "Unofficial, no account needed — see README for the caveats") +
     chip(src.rss_feeds > 0, `RSS×${src.rss_feeds}`, "Deal-blog feeds") +
-    chip(src.telegram, "Telegram", src.telegram ? "Alerts on" : "Set TELEGRAM_BOT_TOKEN / CHAT_ID in .env");
+    chip(src.telegram, "Telegram", src.telegram ? "Alerts on" : "Set TELEGRAM_BOT_TOKEN / CHAT_ID in .env") +
+    (src.amadeus ? chip(true, "Amadeus", "Optional official source, enabled in config.yaml") : "") +
+    (src.kiwi ? chip(true, "Kiwi", "Optional legacy source, enabled in config.yaml") : "");
   const last = s.last_run;
   $("lastRun").textContent = last && last.finished_at
     ? `Last check ${fmtWhen(last.finished_at)} · ${last.observations} fares, ${last.new_deals} deals`

@@ -11,13 +11,26 @@ origins:
 currency: EUR
 
 # Optional watchlist of specific destinations (IATA airport/city codes).
-# Watchlist routes get a full Flight Offers Search each run (rotating through
-# the list), including a business-cabin quote so the premium-cabin error-fare
-# heuristic can fire. Broad "anywhere from OPO" discovery happens regardless.
+# Watchlist routes get a full quote each run (rotating through the list),
+# including a business-cabin quote so the premium-cabin error-fare heuristic
+# can fire.
 watchlist:
   - JFK   # New York
   - GRU   # São Paulo
   - BKK   # Bangkok
+
+# Broad discovery destinations (economy only). There's no true "search
+# anywhere from OPO" with the default Google Flights source (unlike Amadeus's
+# Flight Inspiration Search), so this curated list stands in for it — rotated
+# through the same way as the watchlist. Edit freely to match what you'd
+# actually consider flying.
+discovery_destinations:
+  - MAD   # Madrid
+  - CDG   # Paris
+  - FCO   # Rome
+  - LHR   # London
+  - AMS   # Amsterdam
+  - BCN   # Barcelona
 
 detection:
   # Flag a fare when it is at least this % below the trailing average.
@@ -49,8 +62,35 @@ schedule:
   check_every_hours: 3
 
 api:
-  amadeus:
+  # Default price source: no account or API key needed. See
+  # flightdeals/collectors/google_flights.py for what this actually does —
+  # it's an unofficial scraper (via the `fast-flights` library), not a
+  # sanctioned API, kept deliberately low-volume and cached. Read that before
+  # relying on it, especially the note on GitHub Actions reliability.
+  google_flights:
     enabled: true
+    # Broad discovery: destinations searched per run from discovery_destinations
+    # (rotating least-recently-checked first), economy only.
+    max_discovery_calls_per_run: 2
+    # Watchlist: routes searched per run (least-recently-checked first).
+    # Each route costs 1 request (2 if premium_cabin_check is on).
+    max_offer_calls_per_run: 2
+    premium_cabin_check: true
+    # Concrete search dates used every run (kept fixed so the cache hits).
+    departure_days_ahead: 45
+    stay_days: 7
+    # Delay between real requests (not cache hits) — keep this polite.
+    request_delay_seconds: 4
+    # Long TTL on purpose: this is a scraper with no official quota, so
+    # minimizing request volume matters more than for a real API.
+    cache_ttl_minutes: 360
+
+  # Optional, more official alternative — needs a free Amadeus for Developers
+  # account (see README: "Getting API keys"). Off by default; the collector
+  # also no-ops automatically without AMADEUS_CLIENT_ID/SECRET in .env, so
+  # enabling this without credentials is harmless.
+  amadeus:
+    enabled: false
     # "test" = free sandbox (limited, cached data — fine for trying things out)
     # "production" = real fares; self-service production keys still include a
     # free monthly quota. See README for the quota math.
@@ -76,6 +116,7 @@ api:
     # set KIWI_API_KEY in .env and flip this to true.
     enabled: false
     max_calls_per_run: 2
+    departure_window_days: 60
 
 rss:
   # Case-insensitive whole-word match against post title, summary, and tags.

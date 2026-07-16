@@ -8,6 +8,7 @@ import sqlite3
 from ..config import Config
 from .amadeus import AmadeusCollector
 from .base import Collector
+from .google_flights import GoogleFlightsCollector
 from .kiwi import KiwiCollector
 from .rss import RssCollector
 
@@ -16,7 +17,12 @@ log = logging.getLogger(__name__)
 
 def build_collectors(cfg: Config, conn: sqlite3.Connection) -> list[Collector]:
     collectors: list[Collector] = []
-    for collector in (AmadeusCollector(cfg, conn), KiwiCollector(cfg, conn), RssCollector(cfg, conn)):
+    for collector in (
+        GoogleFlightsCollector(cfg, conn),
+        AmadeusCollector(cfg, conn),
+        KiwiCollector(cfg, conn),
+        RssCollector(cfg, conn),
+    ):
         if collector.enabled():
             collectors.append(collector)
         else:

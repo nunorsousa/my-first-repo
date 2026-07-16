@@ -46,7 +46,7 @@ class KiwiCollector(Collector):
         result = CollectorResult()
         today = date.today()
         date_from = (today + timedelta(days=7)).strftime("%d/%m/%Y")
-        date_to = (today + timedelta(days=self.cfg.amadeus.departure_window_days)).strftime("%d/%m/%Y")
+        date_to = (today + timedelta(days=self.cfg.kiwi.departure_window_days)).strftime("%d/%m/%Y")
 
         for origin in self.cfg.origins[: self.cfg.kiwi.max_calls_per_run]:
             params = {

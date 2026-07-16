@@ -46,6 +46,7 @@ def summary() -> dict:
             "counts": db.counts(conn),
             "last_run": dict(last) if last else None,
             "sources": {
+                "google_flights": cfg.google_flights.enabled,
                 "amadeus": cfg.amadeus.enabled and bool(env("AMADEUS_CLIENT_ID")),
                 "kiwi": cfg.kiwi.enabled and bool(env("KIWI_API_KEY")),
                 "rss_feeds": len(cfg.rss.feeds),

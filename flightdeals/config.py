@@ -52,8 +52,31 @@ class RssCfg:
 
 
 @dataclass
-class AmadeusCfg:
+class GoogleFlightsCfg:
+    """No account or API key needed — see flightdeals/collectors/google_flights.py
+    for what this actually does and its tradeoffs (unofficial, best-effort)."""
+
     enabled: bool = True
+    # Broad discovery: economy-only quotes across `discovery_destinations`.
+    max_discovery_calls_per_run: int = 2
+    # Watchlist: economy (+ business if premium_cabin_check) per route.
+    max_offer_calls_per_run: int = 2
+    premium_cabin_check: bool = True
+    departure_days_ahead: int = 45
+    stay_days: int = 7
+    # Politeness delay between real network requests (not cache hits).
+    request_delay_seconds: float = 4.0
+    # Kept long relative to Amadeus's cache: this is a scraper with no
+    # official quota, so minimizing request volume matters more here.
+    cache_ttl_minutes: int = 360
+
+
+@dataclass
+class AmadeusCfg:
+    """Optional, more official alternative — requires a free Amadeus for
+    Developers account (see README). Off by default since it needs credentials."""
+
+    enabled: bool = False
     environment: str = "test"  # test | production
     max_inspiration_calls_per_run: int = 2
     max_offer_calls_per_run: int = 3
@@ -69,6 +92,7 @@ class AmadeusCfg:
 class KiwiCfg:
     enabled: bool = False
     max_calls_per_run: int = 2
+    departure_window_days: int = 60
 
 
 @dataclass
@@ -76,9 +100,11 @@ class Config:
     origins: list[str] = field(default_factory=lambda: ["OPO"])
     currency: str = "EUR"
     watchlist: list[str] = field(default_factory=list)
+    discovery_destinations: list[str] = field(default_factory=list)
     detection: DetectionCfg = field(default_factory=DetectionCfg)
     alerts: AlertsCfg = field(default_factory=AlertsCfg)
     rss: RssCfg = field(default_factory=RssCfg)
+    google_flights: GoogleFlightsCfg = field(default_factory=GoogleFlightsCfg)
     amadeus: AmadeusCfg = field(default_factory=AmadeusCfg)
     kiwi: KiwiCfg = field(default_factory=KiwiCfg)
     check_every_hours: float = 3.0
@@ -146,9 +172,11 @@ def load_config(path: str | Path | None = None) -> Config:
     if data.get("currency"):
         cfg.currency = str(data["currency"]).strip().upper()
     cfg.watchlist = _parse_watchlist(data.get("watchlist"))
+    cfg.discovery_destinations = _parse_watchlist(data.get("discovery_destinations"))
 
     _apply(cfg.detection, _section(data, "detection"))
     _apply(cfg.alerts, _section(data, "alerts"))
+    _apply(cfg.google_flights, _section(data, "api", "google_flights"))
     _apply(cfg.amadeus, _section(data, "api", "amadeus"))
     _apply(cfg.kiwi, _section(data, "api", "kiwi"))
 
