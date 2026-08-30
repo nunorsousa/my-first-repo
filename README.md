@@ -184,3 +184,11 @@ pytest                                     # run the test suite
 | No Telegram messages | Run `--test-message`; check you messaged the bot first and the chat id is right |
 | No price-drop deals yet | Baseline still warming up (`min_observations`) — expected in week one |
 | Scheduled workflow not running | It must be on the default branch, and secrets must be set |
+
+## Also in this repo
+
+[`assistant/`](assistant/) — an **executive assistant agent** that runs in Claude Code
+against your calendar, Gmail, and Granola notes. `/meeting-prep` briefs you before a
+meeting; `/meeting-recap` captures decisions and action items after one and leaves the
+follow-up in Gmail Drafts. It drafts, it never sends. See
+[assistant/README.md](assistant/README.md).
